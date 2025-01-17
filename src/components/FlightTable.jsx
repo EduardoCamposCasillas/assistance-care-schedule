@@ -1,8 +1,10 @@
-import { useReactTable, getCoreRowModel, flexRender } from "@tanstack/react-table"
-import jsonData from "../../csvjson.json"
-import EditableCell from "./EditableCell"
-import { useState } from "react"
+import { useReactTable, getCoreRowModel, flexRender } from "@tanstack/react-table";
+import { useState, useEffect } from "react";
+import EditableCell from "./EditableCell"; // Si necesitas celdas editables
+import usePVRFlights from "../hooks/usePVRFlights"; // Importa el hook
+
 function FlightTable() {
+  const { flights, loading, error } = usePVRFlights(); // Obtén los datos del hook
 
   const columns = [
     {
@@ -17,29 +19,31 @@ function FlightTable() {
     {
       header: "Servicios",
       accessorKey: 'serviciosAgente',
+      cell: EditableCell,
     },
     {
       header: "Aerolinea",
       accessorKey: 'aerolinea',
     },
     {
-      header: "No. Vuelo",
+      header: "Numero de vuelo",
       accessorKey: 'noArrival',
     },
     {
-      header: "Hora",
+      header: "Hora llegada",
       accessorKey: 'arrivalTime',
     },
     {
       header: "Servicios",
       accessorKey: 'serviciosArrival',
+      cell: EditableCell,
     },
     {
       header: "Destino",
       accessorKey: 'destinoArrival',
     },
     {
-      header: "No. Vuelo",
+      header: "Salida",
       accessorKey: 'noDeparture',
     },
     {
@@ -49,6 +53,7 @@ function FlightTable() {
     {
       header: "Servicios",
       accessorKey: 'serviciosDeparture',
+      cell: EditableCell,
     },
     {
       header: "Destino",
@@ -57,60 +62,55 @@ function FlightTable() {
     {
       header: "Posicion",
       accessorKey: 'posicion',
+      cell: EditableCell,
     },
+  ];
+  console.log(flights);
+  // Si no hay vuelos, aseguramos que haya al menos 50 filas vacías
+  const data = flights.length > 0 ? flights : new Array(50).fill({});
 
-  ]
-  const [data, setData] = useState(jsonData);
   const table = useReactTable({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
     meta: {
-      updateData: (rowIndex, columnId, value) => setData(
-        prev => prev.map(
-          (row, index) =>
-            index === rowIndex ? {
-              ...prev[rowIndex],
-              [columnId]: value,
-            } : row
-        )
-      )
+      updateData: (rowIndex, columnId, value) => setData(prev => prev.map((row, index) =>
+        index === rowIndex ? { ...prev[rowIndex], [columnId]: value } : row
+      )),
     },
-  })
-  console.log(data)
+  });
+
+  if (loading) return <p>Cargando vuelos...</p>;
+  if (error) return <p className="text-red-500">{error}</p>;
+
   return (
     <div className="relative overflow-x-auto shadow-md sm:rounded-lg">
-      <table className="w-full table-auto text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
-        <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
-          {
-            table.getHeaderGroups().map(headerGroup => (
-              <tr key={headerGroup.id}>
-                {
-                  headerGroup.headers.map(header => (
-                    <th className="px-6 py-3" key={header.id}>
-                      {header.column.columnDef.header}
-                    </th>
-                  ))
-                }
-              </tr>
-            ))
-          }
+      <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+        <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700">
+          {table.getHeaderGroups().map(headerGroup => (
+            <tr key={headerGroup.id}>
+              {headerGroup.headers.map(header => (
+                <th key={header.id} className="px-6 py-3">
+                  {header.column.columnDef.header}
+                </th>
+              ))}
+            </tr>
+          ))}
         </thead>
         <tbody>
-          {
-            table.getRowModel().rows.map((row) => (
-              <tr className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600" key={row.id}>
-                {row.getVisibleCells().map((cell) => (
-                  <td className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white" key={cell.id}>
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </td>
-                ))}
-              </tr>
-            ))
-          }
+          {table.getRowModel().rows.map(row => (
+            <tr key={row.id} className="bg-white border-b hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-600">
+              {row.getVisibleCells().map(cell => (
+                <td key={cell.id} className="px-6 py-4">
+                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                </td>
+              ))}
+            </tr>
+          ))}
         </tbody>
       </table>
     </div>
-  )
+  );
 }
-export default FlightTable
+
+export default FlightTable;
